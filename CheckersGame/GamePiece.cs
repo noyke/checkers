@@ -267,10 +267,40 @@ namespace GameLogic
                 }
             }
 
-
-
         }
 
-         
+        public bool IsMoveInPossibleRegularMoves(Move i_UserMove)
+        {
+            bool isMoveExists = false;
+
+            foreach (Move move in m_PossibleRegularMoves)
+            {
+                if (move.Equals(i_UserMove))
+                {
+                    isMoveExists = true;
+                    break;
+                }
+            }
+
+            return isMoveExists;
+        }
+
+        public bool IsMoveInPossibleJumpMoves(Move i_UserMove)
+        {
+            bool isMoveExists = false;
+
+            foreach (Move move in m_PossibleJumpMoves)
+            {
+                if(move.Equals(i_UserMove))
+                {
+                    isMoveExists = true;
+                    break; 
+                }
+            }
+
+            return isMoveExists;
+        }
+
+
     }
 }
