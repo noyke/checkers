@@ -23,37 +23,45 @@ namespace ConsoleUI
                 
                 while (!isRoundOver)
                 {
-                    // printBoard(); // TODO
-                    // roundOver = m_Game.CheckIsRoundOver(); // TODO
+                    printBoard();
 
-                    if (m_Game.CurrentPlayerType() == Player.eType.Human)
+                    if(!(isRoundOver = m_Game.CheckIsRoundOver())) // TODO
                     {
-                        
-                        if (!makeUserMove())
+                        if (m_Game.CurrentPlayerType() == Player.eType.Human)
                         {
-                            isRoundOver = true;
+                            if (!makeUserMove())
+                            {
+                                isRoundOver = true;
+                            }
                         }
-
+                        else
+                        {
+                            if(!m_Game.MakeComputerMove())
+                            {
+                                isRoundOver = true;
+                            }
+                        }
                     }
-                    else
-                    {
-                        // m_Game.MakeComputerMove();
-                    }
-
-                   
-
                 }
 
-                
+                displayRoundResult();
+
+                if(!checkForRematch())
+                {
+                    isGameOver = true;
+                }
+                else
+                {
+                    // rematch
+                }
             }
         }
 
         private bool makeUserMove()
         {
-            bool isValidMove = false , anotherJump = false; 
+            bool isValidMove = false; 
             string userMoveStr;
             Move userMove;
-            Point lastLocation = new Point(-1, -1); // SNIR out of bounds KASTACH 
 
             do
             {
@@ -67,27 +75,14 @@ namespace ConsoleUI
                 {
                     userMove = Move.Parse(userMoveStr);
 
-                    if (anotherJump) // SNIR if it jump loops check if the user chose the right source (the last destination)
-                    {
-                        if (m_Game.IsContinueJump(lastLocation, userMove))
-                        {
-                            isValidMove = m_Game.MakeUserMoveAndUpdates(userMove, out anotherJump);
-                        }
-                    }
-
-                    else
-                    {
-                        isValidMove = m_Game.MakeUserMoveAndUpdates(userMove, out anotherJump);
-                    }
-
+                    isValidMove = m_Game.MakeUserMoveAndUpdates(userMove);
+                    
                     if(!isValidMove) 
                     { 
                         Console.WriteLine("The input you entered is invalid. Please try again.");
                     }
-
-                    lastLocation = userMove.Destination;
                 }
-            } while (!(isValidMove) || anotherJump);
+            } while (!isValidMove);
 
 
             return !checkIsQuitInput(userMoveStr);
@@ -236,6 +231,78 @@ namespace ConsoleUI
             return opponentType;
         }
 
-        // public void PrintBoard(Board i_GameBoard)   // TODO
+        private void printBoard()
+        {
+            char currGamePieceSign;
+            char rowIndex = 'a';
+            int boardSize = m_Game.GetBoardSize();
+
+            printBoardColsIndexes(boardSize);
+            printBoardRowsSeparator(boardSize);
+
+            for(int row = 0; row < boardSize; row++, rowIndex++)
+            {
+                Console.Write(rowIndex.ToString());
+
+                for(int col = 0; col < boardSize; col++)
+                {
+                    currGamePieceSign = getSignToPrint(row, col);
+
+                    Console.Write("| " + currGamePieceSign.ToString() + " ");
+                }
+
+                Console.WriteLine("|");
+                printBoardRowsSeparator(boardSize);
+            }
+
+            printLastMove(); // TODO
+        }
+
+        private void printBoardColsIndexes(int i_BoardSize)
+        {
+            char colIndex = 'A';
+
+            Console.Write(' ');
+
+            for(int col = 0; col < i_BoardSize; col++, colIndex++)
+            {
+                Console.Write("  " + colIndex.ToString() + " ");
+            }
+
+            Console.WriteLine();
+        }
+
+        private void printBoardRowsSeparator(int i_BoardSize)
+        {
+            Console.Write(' ');
+
+            for(int col = 0; col < i_BoardSize; col++)
+            {
+                Console.Write("====");
+            }
+
+            Console.WriteLine('=');
+        }
+
+        private char getSignToPrint(int row, int col) // find a better name
+        {
+            char signToPrint;
+            GamePiece.eColor? gamePieceColor = m_Game.GetGamePieceColor(int row, int col);
+
+            if(gamePieceColor == null)
+            {
+                signToPrint = ' ';
+            }
+            else if(gamePieceColor == GamePiece.eColor.Black)
+            {
+                signToPrint = m_Game.CheckIsGamePieceKing(int row, int col) ? 'K' : 'X';
+            }
+            else
+            {
+                signToPrint = m_Game.CheckIsGamePieceKing(int row, int col) ? 'U' : 'O';
+            }
+
+            return signToPrint;
+        }
     }
 }

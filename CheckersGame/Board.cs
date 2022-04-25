@@ -123,7 +123,7 @@ namespace GameLogic
             // TODO !!
         }
 
-        public bool CheckIsLocationInBound(Point i_Location)        // ??? here or in validator
+        public bool CheckIsLocationInBound(Point i_Location)
         {
             return 0 <= i_Location.X && i_Location.X < this.Size && 0 <= i_Location.Y && i_Location.Y < this.Size;
         }

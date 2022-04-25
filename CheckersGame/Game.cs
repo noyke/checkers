@@ -143,7 +143,7 @@ namespace GameLogic
 
         private void makeMove(Move i_UserMove) //SNIR make the actual move 
         {
-            m_GameBoard[i_UserMove.Source].Location = m_GameBoard[i_UserMove.Destination].Location;
+            m_GameBoard[i_UserMove.Source].Location = i_UserMove.Destination;
             m_GameBoard[i_UserMove.Destination] = m_GameBoard[i_UserMove.Source];
             m_GameBoard[i_UserMove.Source] = null;
         }
