@@ -218,10 +218,11 @@ namespace GameLogic
                 result = eRoundResult.Draw;
             }
 
-            if(result != eRoundResult.Draw)
+            if (result != eRoundResult.Draw)
             {
                 swapCurrentPlayer();
                 m_Players[m_CurrentPlayerIndex]
+                    }
 
             // if a player has no gamePieces - he lose.
 
