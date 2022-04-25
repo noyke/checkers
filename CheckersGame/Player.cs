@@ -71,6 +71,11 @@ namespace GameLogic
             }
         }
 
+        public bool CheckIsStilHaveGamePieces()
+        {
+            return m_GamePieces.Count.Equals(0);
+        }
+
         public void Reset()
         {
             m_GamePieces.Clear();
@@ -123,7 +128,43 @@ namespace GameLogic
             return isHaveAPossibleMove;
         }
 
-     
+        public bool CheckIsGAmePieceBelongs(GamePiece i_GamePiece)
+        {
+            return i_GamePiece.Color == GamePiece.eColor.Black && this.r_PlayerNumber.Equals(Player.ePlayerNumber.Player1) || i_GamePiece.Color == GamePiece.eColor.White && this.r_PlayerNumber.Equals(Player.ePlayerNumber.Player2);
+        }
+
+        public bool CheckIsHaveMandatoryMove()
+        {
+            bool IsMandatory = false;
+
+            foreach (GamePiece gamePiece in m_GamePieces)
+            {
+                if(gamePiece.CheckIsHaveAPossibleJumpMove())
+                {
+                    IsMandatory = true;
+                    break;
+                }
+            }
+
+            return IsMandatory;
+        }
+
+        public void CalculateWinnerScore()
+        {
+            foreach(GamePiece gamePiece in m_GamePieces)
+            {
+                if(gamePiece.Type.Equals(GamePiece.eType.Man))
+                {
+                    m_Score++;
+                }
+                else
+                {
+                    m_Score += 4;
+                }
+            }
+        }
+
+
     }
    
 }
