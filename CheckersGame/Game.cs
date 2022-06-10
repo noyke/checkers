@@ -17,8 +17,16 @@ namespace GameLogic
         private Board m_GameBoard;
         private Player[] m_Players = new Player[2];
         private int m_CurrentPlayerIndex;
-        private Move m_LastMove;
-       
+        private Move? m_LastMove;
+
+        public Move? LastMove
+        {
+            get
+            {
+                return m_LastMove;
+            }
+        }
+
         public void InitGame(string i_Player1Name, string i_Player2Name, Player.eType i_Player2Type, Board.eBoardSize i_BoardSize)
         {
             m_GameBoard = new Board(i_BoardSize);
@@ -43,6 +51,7 @@ namespace GameLogic
             }
 
             m_CurrentPlayerIndex = 0;
+            m_LastMove = null;
         }
 
         private Player getCurrentPlayer()
@@ -50,7 +59,7 @@ namespace GameLogic
             return m_Players[m_CurrentPlayerIndex];
         }
 
-        private Player getOtherPlayer()
+        private Player getNextPlayer()
         {
             return m_Players[(m_CurrentPlayerIndex + 1) % 2];
         }
@@ -60,6 +69,72 @@ namespace GameLogic
             return getCurrentPlayer().Type;
         }
 
+        public int GetBoardSize()
+        {
+            return m_GameBoard.Size;
+        }
+
+        public GamePiece.eColor? GetGamePieceColor(Point i_Location)
+        {
+            GamePiece.eColor? gamePieceColor;
+
+            if(m_GameBoard[i_Location] == null)
+            {
+                gamePieceColor = null;
+            }
+            else
+            {
+                gamePieceColor = m_GameBoard[i_Location].Color;
+            }
+
+            return gamePieceColor;
+        }
+
+        public bool CheckIsGamePieceKing(Point i_Location)
+        {
+            return m_GameBoard[i_Location].Type == GamePiece.eType.King;
+        }
+
+        public string GetLastMovePlayerName()
+        {
+            return getLastMovePlayer().Name;
+        }
+
+        public Player.ePlayerNumber GetLastMovePlayerNumber()
+        {
+            return getLastMovePlayer().PlayerNumber;
+        }
+
+        public string GetCurrentPlayerName()
+        {
+            return getCurrentPlayer().Name;
+        }
+
+        public string GetWinnerName(Game.eRoundResult i_RoundResult)
+        {
+            return getWinner(i_RoundResult).Name;
+        }
+
+        public int GetWinnerScore(Game.eRoundResult i_RoundResult)
+        {
+            return getWinner(i_RoundResult).Score;
+        }
+
+        public string GetLoserName(Game.eRoundResult i_RoundResult)
+        {
+            return getLoser(i_RoundResult).Name;
+        }
+
+        public int GetLoserScore(Game.eRoundResult i_RoundResult)
+        {
+            return getLoser(i_RoundResult).Score;
+        }
+
+        public Player.ePlayerNumber GetCurrentPlayerNumber()
+        {
+            return getCurrentPlayer().PlayerNumber;
+        }
+
         private void swapCurrentPlayer()
         {
             m_CurrentPlayerIndex = (m_CurrentPlayerIndex + 1) % 2;
@@ -67,215 +142,263 @@ namespace GameLogic
 
         public void MakeComputerMove()
         {
-            // TODO
+            Move computerMove = getComputerMove();
+
+            makeMove(computerMove);
         }
 
-        public bool MakeUserMoveAndUpdates(Move i_UserMove)
+        private Move getComputerMove()
         {
-            bool isMoved = false, isJumpMove = false;
+            bool isValidMove;
+            Move computerMove;
+            List<Move> possibleMoves;
+            Random random = new Random();
+
+            if (getCurrentPlayer().CheckIsHaveAPossibleJumpMove())
+            {
+                possibleMoves = getCurrentPlayer().GetPossibleJumpMoves();
+            }
+            else
+            {
+                possibleMoves = getCurrentPlayer().GetPossibleRegularMoves();
+            }
+
+            do
+            {
+                computerMove = possibleMoves[random.Next(possibleMoves.Count)];
+                isValidMove = checkIsValidMove(computerMove);
+            } while (!isValidMove);
+
+            return computerMove;
+        }
+
+        public bool MakeUserMove(Move i_UserMove)
+        {
+            bool isValidMove;
+
+            if (isValidMove = checkIsValidMove(i_UserMove))
+            {
+                makeMove(i_UserMove);
+            }
+
+            return isValidMove;
+        }
+
+        private bool checkIsValidMove(Move i_Move)
+        {
+            bool isValidMove = true;
             GamePiece currGamePiece;
 
-            if (m_GameBoard.CheckIsLocationInBound(i_UserMove.Source) && m_GameBoard.CheckIsLocationInBound(i_UserMove.Destination))
+            if (m_GameBoard.CheckIsLocationInBound(i_Move.Source) && m_GameBoard.CheckIsLocationInBound(i_Move.Destination))
             {
-                currGamePiece = m_GameBoard[i_UserMove.Source];
-
-                if (getCurrentPlayer().CheckIsGAmePieceBelongs(currGamePiece))
+                if (m_GameBoard[i_Move.Source] != null)
                 {
-                    if(LastPlayerWhoPlayed().Equals(getCurrentPlayer().PlayerNumber))
+                    currGamePiece = m_GameBoard[i_Move.Source];
+
+                    if (getCurrentPlayer().CheckIsOwner(currGamePiece))
                     {
-                        if(m_LastMove.Destination.Equals(i_UserMove.Source))
+                        if (currGamePiece.CheckIsMoveInPossibleMovesLists(i_Move))
                         {
-                            isJumpMove = true;
+                            if (getCurrentPlayer().CheckIsHaveAPossibleJumpMove())
+                            {
+                                if (i_Move.CheckIsJumpMove())
+                                {
+                                    if (getCurrentPlayer().CheckIsOwner(getLastMovedGamePiece()) && !currGamePiece.Equals(getLastMovedGamePiece()))
+                                    {
+                                        isValidMove = false;
+                                    }
+                                }
+                                else
+                                {
+                                    isValidMove = false;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            isValidMove = false;
                         }
                     }
-                    else if(getCurrentPlayer().CheckIsHaveMandatoryMove())
+                    else
                     {
-                        isJumpMove = true; 
-                    }
-
-                    if(isJumpMove)
-                    {
-                        if (currGamePiece.IsMoveInPossibleJumpMoves(i_UserMove))
-                        {
-                            isMoved = true;
-                            makeAnEat(i_UserMove);
-                            makePlayersUpdates(m_GameBoard);
-                        }
-                    }
-                    else if (currGamePiece.IsMoveInPossibleRegularMoves(i_UserMove))
-                    {
-                        isMoved = true; 
-                        makeMove(i_UserMove);
-                        makePlayersUpdates(m_GameBoard); 
+                        isValidMove = false;
                     }
                 }
-            }
-
-            if(isMoved)
-            {
-                m_LastMove = i_UserMove;
-                checkIfKingAndCrown(i_UserMove.Destination);
-            }
-           
-            return isMoved;
-
-
-            /////// notice: getting here only if there is at least one possible move (checked on UI loop) //////
-
-            // V check if both of the points are in bound. // using CheckIsLocationInBound from Board / Validator 
-            // V check if in source point there is a current player's gamePiece. // 
-            // V check if last move made by the same current player, if so, check if current move source equals to last move destination (***).
-            // V determine is it regular/jump move or non.     //  Move's method?
-            // V if its a regular move, check whether the current player has a mandatory move (the case of (***) or a generally).
-            // V check if that move exist in the relevant(regular/jump) moveList.
-            // operate the move and updates on board and gamePiece (+ update moveLists of current gamePiece and relevants neighbors. + crown current gamePiece if needed).
-
-            // in case a move was made:
-            //      update the m_LastMove to current move.
-            //      if jump move operated and the current gamePiece has another possible jump move - don't swap current player
-            //      else swap current player.
-            // loop to multy eat after one step (check if there another eat to make and enable just the valid jump 
-            // is the piece is now king? 
-            // update piece that were eaten 
-
-            // return whether a move was made.
-        }
-
-        private void makeMove(Move i_UserMove) //SNIR make the actual move 
-        {
-            m_GameBoard[i_UserMove.Source].Location = i_UserMove.Destination;
-            m_GameBoard[i_UserMove.Destination] = m_GameBoard[i_UserMove.Source];
-            m_GameBoard[i_UserMove.Source] = null;
-        }
-
-        private void makeAnEat(Move i_move) // SNIR the piece that was eatan became(insane) null MODOULATE???
-        {
-            Point eatenPieceLocation;
-            GamePiece SourceGamePiece = m_GameBoard[i_move.Source];
-
-            if(i_move.Source.X < i_move.Destination.X)
-            {
-               if(SourceGamePiece.GetType().Equals(GamePiece.eType.Man))
-                {
-                    eatenPieceLocation = SourceGamePiece.NeighborForwardRightLocation();
-                }
-
-               else
-                {
-                    eatenPieceLocation = SourceGamePiece.NeighborBackwardRightLocation();
-                }
-            }
-
-            else
-            { 
-                if (SourceGamePiece.GetType().Equals(GamePiece.eType.Man))
-                {
-                    eatenPieceLocation = SourceGamePiece.NeighborForwardLeftLocation();
-                }
-
                 else
                 {
-                    eatenPieceLocation = SourceGamePiece.NeighborBackwardLeftLocation();
+                    isValidMove = false;
                 }
             }
+            else
+            {
+                isValidMove = false;
+            }
 
-            getOtherPlayer().RemoveGamePiece(m_GameBoard[eatenPieceLocation]);
-            m_GameBoard[eatenPieceLocation] = null;
-            makeMove(i_move);
+            return isValidMove;
         }
 
-        public bool IsContinueJump(Point i_LastLocation, Move i_CurrUserMove)
+        private void makeMove(Move i_Move)
         {
-            bool isValidJump = false; 
+            GamePiece currGamePiece = m_GameBoard[i_Move.Source];
 
-            if(i_LastLocation.Equals(i_CurrUserMove.Source))
+            currGamePiece.Location = i_Move.Destination;
+            m_GameBoard[i_Move.Destination] = currGamePiece;
+            m_GameBoard[i_Move.Source] = null;
+
+            crownIfNeeded(currGamePiece);
+
+            if (i_Move.CheckIsJumpMove())
             {
-                foreach(Move move in m_GameBoard[i_LastLocation].getPossibleJumpMovesList())
+                makeCapture(i_Move);
+            }
+
+            updatePlayersPossibleMoves();
+            m_LastMove = i_Move;
+
+            if(!(i_Move.CheckIsJumpMove() && currGamePiece.CheckIsHaveAPossibleJumpMove()))
+            {
+                swapCurrentPlayer();
+            }
+        }
+
+        private void makeCapture(Move i_Move)
+        {
+            GamePiece capturedGamePiece;
+
+            if (i_Move.Source.X < i_Move.Destination.X)
+            {
+                if (i_Move.Source.Y < i_Move.Destination.Y)
                 {
-                    isValidJump = move.Equals(i_CurrUserMove);
+                    capturedGamePiece = m_GameBoard[i_Move.Source.Y + 1, i_Move.Source.X + 1];
+                }
+                else
+                {
+                    capturedGamePiece = m_GameBoard[i_Move.Source.Y - 1, i_Move.Source.X + 1];
+                }
+            }
+            else
+            {
+                if (i_Move.Source.Y < i_Move.Destination.Y)
+                {
+                    capturedGamePiece = m_GameBoard[i_Move.Source.Y + 1, i_Move.Source.X - 1];
+                }
+                else
+                {
+                    capturedGamePiece = m_GameBoard[i_Move.Source.Y - 1, i_Move.Source.X - 1];
                 }
             }
 
-            return isValidJump;
+            m_GameBoard[capturedGamePiece.Location] = null;
+            getNextPlayer().RemoveGamePiece(capturedGamePiece);
         }
 
         public bool CheckIsRoundOver()
         {
-            bool isRoundOver = false;
-            isRoundOver = getCurrentPlayer().CheckIsHaveAPossibleMove();
+            bool isRoundOver = !getCurrentPlayer().CheckIsHaveAPossibleMove();
 
             foreach(Player player in m_Players)
             {
-                isRoundOver = player.CheckIsStilHaveGamePieces();
+                if(isRoundOver)
+                {
+                    break;
+                }
+
+                isRoundOver = !player.CheckIsStillHaveGamePieces();
             }
 
             return isRoundOver;
         }
 
-        public eRoundResult roundResult()
+        public eRoundResult RoundResult()
         {
-            eRoundResult result; 
-            if(getCurrentPlayer().GetGamePieceList().Count == 0)
+            eRoundResult roundResult = eRoundResult.Draw;
+
+            foreach(Player player in m_Players)
             {
-                result = m_CurrentPlayerIndex.Equals(0) ? eRoundResult.Player2Win : eRoundResult.Player1Win;
+                if(!roundResult.Equals(eRoundResult.Draw))
+                {
+                    break;
+                }
+                
+                if(!player.CheckIsStillHaveGamePieces())
+                {
+                    roundResult = player.PlayerNumber.Equals(Player.ePlayerNumber.Player1) ? eRoundResult.Player2Win : eRoundResult.Player1Win;
+                }
             }
 
-            if(getCurrentPlayer().CheckIsHaveAPossibleMove())
+            if(roundResult.Equals(eRoundResult.Draw))
             {
-                result = m_CurrentPlayerIndex.Equals(0) ? eRoundResult.Player2Win : eRoundResult.Player1Win;
+                if (getCurrentPlayer().CheckIsHaveAPossibleMove())
+                {
+                    roundResult = getCurrentPlayer().PlayerNumber.Equals(Player.ePlayerNumber.Player1) ? eRoundResult.Player2Win : eRoundResult.Player1Win;
+                }
+                else
+                {
+                    if (getNextPlayer().CheckIsHaveAPossibleMove())
+                    {
+                        roundResult = getCurrentPlayer().PlayerNumber.Equals(Player.ePlayerNumber.Player1) ? eRoundResult.Player2Win : eRoundResult.Player1Win;
+                    }
+                    else
+                    {
+                        roundResult = eRoundResult.Draw;
+                    }
+                }
             }
 
-            else if(getOtherPlayer().CheckIsHaveAPossibleMove())
+            if (roundResult != eRoundResult.Draw)
             {
-                result = m_CurrentPlayerIndex.Equals(0) ? eRoundResult.Player2Win : eRoundResult.Player1Win;
+                calculateWinnerScore(roundResult);
             }
 
-            else
-            {
-                result = eRoundResult.Draw;
-            }
-
-            if (result != eRoundResult.Draw)
-            {
-                swapCurrentPlayer();
-                getCurrentPlayer().CalculateWinnerScore();
-            }
-
-            return result;
-
-            // if a player has no gamePieces - he lose.
-
-            // if the current player has possible moves - current player lose (because he quitted).
-            // else if the other player has possible moves - current player lose.
-            // else - draw.
-
-            // if not a draw, calculate and update winner score as (winner's amount of gamePieces - loser's amount of gamePieces) while a king worth 4 gamePieces.
+            return roundResult;
         }
 
-        private void makePlayersUpdates(Board i_GameBoard)
+        private void calculateWinnerScore(eRoundResult i_RoundResult)
+        {
+            Player winner = getWinner(i_RoundResult);
+            Player loser = getLoser(i_RoundResult);
+
+            winner.Score += Math.Max(Math.Abs(winner.GetAmountOfGamePiecesForScore() - loser.GetAmountOfGamePiecesForScore()), 1);
+        }
+
+        private Player getWinner(eRoundResult i_RoundResult)
+        {
+            return i_RoundResult == eRoundResult.Player1Win ? m_Players[0] : m_Players[1];
+        }
+
+        private Player getLoser(eRoundResult i_RoundResult)
+        {
+            return i_RoundResult == eRoundResult.Player1Win ? m_Players[1] : m_Players[0];
+        }
+
+        private void updatePlayersPossibleMoves()
         {
             foreach(Player player in m_Players)
             {
-                player.UpdatePossibleRegularMoves(i_GameBoard);
-                player.UpdatePossibleJumpMoves(i_GameBoard);
+                player.UpdatePossibleRegularMoves(m_GameBoard);
+                player.UpdatePossibleJumpMoves(m_GameBoard);
             }
         }
-        private void checkIfKingAndCrown(Point i_CurrLocation) 
+
+        private void crownIfNeeded(GamePiece i_GamePiece)
         {
-            if (m_GameBoard[i_CurrLocation].GetType().Equals(GamePiece.eType.Man))
+            if (i_GamePiece.Type.Equals(GamePiece.eType.Man))
             {
-                if ((m_CurrentPlayerIndex.Equals(0) && i_CurrLocation.Y.Equals(0)) || (m_CurrentPlayerIndex.Equals(1) && i_CurrLocation.Y.Equals(m_GameBoard.Size)))
+                if(i_GamePiece.Location.Y.Equals(i_GamePiece.Color.Equals(GamePiece.eColor.Black) ? 0 : m_GameBoard.Size - 1))
                 {
-                    m_GameBoard[i_CurrLocation].Type = GamePiece.eType.King;
+                    i_GamePiece.Type = GamePiece.eType.King;
                 }
             }
         }
 
-        private Player.ePlayerNumber LastPlayerWhoPlayed()
+        private GamePiece getLastMovedGamePiece()
         {
-            return m_GameBoard[m_LastMove.Source].Color.Equals(GamePiece.eColor.Black) ? Player.ePlayerNumber.Player1 : Player.ePlayerNumber.Player2;
+            return m_GameBoard[m_LastMove.Value.Destination];
         }
 
-      
+        private Player getLastMovePlayer()
+        {
+            return getLastMovedGamePiece().Color == GamePiece.eColor.Black ? m_Players[0] : m_Players[1];
+        }
     }
 }

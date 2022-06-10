@@ -16,38 +16,36 @@ namespace GameLogic
 
         private readonly GamePiece[,] r_GameBoard;
 
-        public Board(eBoardSize i_BoardSize)
+        internal Board(eBoardSize i_BoardSize)
         {
             r_GameBoard = new GamePiece[(int)i_BoardSize, (int)i_BoardSize];
         }
 
-        public GamePiece this[int i_X, int i_Y]
+        internal GamePiece this[int i_Y, int i_X]
         {
             get
             {
-                return r_GameBoard[i_X, i_Y];
+                return r_GameBoard[i_Y, i_X];
             }
-
             set
             {
-                r_GameBoard[i_X, i_Y] = value;
+                r_GameBoard[i_Y, i_X] = value;
             }
         }
 
-        public GamePiece this[Point i_position]
+        internal GamePiece this[Point i_position]
         {
             get
             {
-                return this[i_position.X, i_position.Y];
+                return this[i_position.Y, i_position.X];
             }
-
             set
             {
-                this[i_position.X, i_position.Y] = value;
+                this[i_position.Y, i_position.X] = value;
             }
         }
 
-        public int Size
+        internal int Size
         {
             get
             {
@@ -55,7 +53,7 @@ namespace GameLogic
             }
         }
 
-        public void SetBoardAndGamePieces(Player[] i_Players)
+        internal void SetBoardAndGamePieces(Player[] i_Players)
         {
             setNonPlayerLand();
 
@@ -83,7 +81,6 @@ namespace GameLogic
         {
             GamePiece currGamePiece;
             Point currLocation;
-            
             GamePiece.eColor pieceColor = i_Player.PlayerNumber == Player.ePlayerNumber.Player1 ? GamePiece.eColor.Black : GamePiece.eColor.White;
             int firstRow = i_Player.PlayerNumber == Player.ePlayerNumber.Player1 ? (this.Size / 2) + 1 : 0;
             int lastRow = i_Player.PlayerNumber == Player.ePlayerNumber.Player1 ? this.Size : (this.Size / 2) - 1;
@@ -113,49 +110,9 @@ namespace GameLogic
             return (i_Location.X % 2 == 0 && i_Location.Y % 2 != 0) || (i_Location.X % 2 != 0 && i_Location.Y % 2 == 0);
         }
 
-        public void UpdateMoveListsBeforeMove(GamePiece i_GamePiece)
-        {
-            // TODO !!
-        }
-
-        public void UpdateMoveListsAfterMove(GamePiece i_GamePiece)
-        {
-            // TODO !!
-        }
-
-        public bool CheckIsLocationInBound(Point i_Location)
+        internal bool CheckIsLocationInBound(Point i_Location)
         {
             return 0 <= i_Location.X && i_Location.X < this.Size && 0 <= i_Location.Y && i_Location.Y < this.Size;
         }
-
-        // neighbors methods problem - how to notice when there are out of bound neighbors
-
-        //public GamePiece NeighborForwardRight(GamePiece i_GamePiece)
-        //{
-        //    int offset = i_GamePiece.Color == GamePiece.eColor.Black ? 1 : -1;
-
-        //    return this[i_GamePiece.Location.X - offset, i_GamePiece.Location.Y + 1];
-        //}
-
-        //public GamePiece NeighborForwardLeft(GamePiece i_GamePiece)
-        //{
-        //    int offset = i_GamePiece.Color == GamePiece.eColor.Black ? 1 : -1;
-
-        //    return this[i_GamePiece.Location.X - offset, i_GamePiece.Location.Y - 1];
-        //}
-
-        //public GamePiece NeighborBackwardRight(GamePiece i_GamePiece)
-        //{
-        //    int offset = i_GamePiece.Color == GamePiece.eColor.Black ? 1 : -1;
-
-        //    return this[i_GamePiece.Location.X + offset, i_GamePiece.Location.Y + 1];
-        //}
-
-        //public GamePiece NeighborBackwardLeft(GamePiece i_GamePiece)
-        //{
-        //    int offset = i_GamePiece.Color == GamePiece.eColor.Black ? 1 : -1;
-
-        //    return this[i_GamePiece.Location.X + offset, i_GamePiece.Location.Y - 1];
-        //}
     }
 }

@@ -27,14 +27,14 @@ namespace GameLogic
         private List<GamePiece> m_GamePieces = new List<GamePiece>();
         private int m_Score = 0;
 
-        public Player(string i_Name, eType i_PlayerType, ePlayerNumber i_PlayerNumber)
+        internal Player(string i_Name, eType i_PlayerType, ePlayerNumber i_PlayerNumber)
         {
             r_Name = i_Name;
             r_Type = i_PlayerType;
             r_PlayerNumber = i_PlayerNumber;
         }
 
-        public string Name
+        internal string Name
         {
             get
             {
@@ -42,7 +42,7 @@ namespace GameLogic
             }
         }
 
-        public eType Type
+        internal eType Type
         {
             get
             {
@@ -50,7 +50,7 @@ namespace GameLogic
             }
         }
 
-        public ePlayerNumber PlayerNumber
+        internal ePlayerNumber PlayerNumber
         {
             get
             {
@@ -58,35 +58,29 @@ namespace GameLogic
             }
         }
 
-        public int Score
+        internal int Score
         {
             get
             {
                 return m_Score;
             }
-
             set
             {
                 m_Score = value;
             }
         }
 
-        public bool CheckIsStilHaveGamePieces()
+        internal bool CheckIsStillHaveGamePieces()
         {
-            return m_GamePieces.Count.Equals(0);
+            return !m_GamePieces.Count.Equals(0);
         }
 
-        public void Reset()
+        internal void Reset()
         {
             m_GamePieces.Clear();
         }
 
-        public List<GamePiece> GetGamePieceList()
-        {
-            return m_GamePieces;
-        }
-
-        public void UpdatePossibleRegularMoves(Board i_GameBoard)
+        internal void UpdatePossibleRegularMoves(Board i_GameBoard)
         {
             foreach(GamePiece gamePiece in m_GamePieces)
             {
@@ -94,7 +88,7 @@ namespace GameLogic
             }
         }
 
-        public void UpdatePossibleJumpMoves(Board i_GameBoard)
+        internal void UpdatePossibleJumpMoves(Board i_GameBoard)
         {
             foreach (GamePiece gamePiece in m_GamePieces)
             {
@@ -102,17 +96,17 @@ namespace GameLogic
             }
         }
 
-        public void AddGamePiece(GamePiece i_GamePiece)
+        internal void AddGamePiece(GamePiece i_GamePiece)
         {
             m_GamePieces.Add(i_GamePiece);
         }
 
-        public void RemoveGamePiece(GamePiece i_GamePiece)
+        internal void RemoveGamePiece(GamePiece i_GamePiece)
         {
             m_GamePieces.Remove(i_GamePiece);
         }
 
-        public bool CheckIsHaveAPossibleMove()
+        internal bool CheckIsHaveAPossibleMove()
         {
             bool isHaveAPossibleMove = false;
 
@@ -128,43 +122,68 @@ namespace GameLogic
             return isHaveAPossibleMove;
         }
 
-        public bool CheckIsGAmePieceBelongs(GamePiece i_GamePiece)
+        internal bool CheckIsOwner(GamePiece i_GamePiece)
         {
-            return i_GamePiece.Color == GamePiece.eColor.Black && this.r_PlayerNumber.Equals(Player.ePlayerNumber.Player1) || i_GamePiece.Color == GamePiece.eColor.White && this.r_PlayerNumber.Equals(Player.ePlayerNumber.Player2);
+            return this.r_PlayerNumber.Equals(i_GamePiece.Color == GamePiece.eColor.Black ? Player.ePlayerNumber.Player1 : Player.ePlayerNumber.Player2);
         }
 
-        public bool CheckIsHaveMandatoryMove()
+        internal bool CheckIsHaveAPossibleJumpMove()
         {
-            bool IsMandatory = false;
+            bool IsHaveAPossibleJumpMove = false;
 
             foreach (GamePiece gamePiece in m_GamePieces)
             {
                 if(gamePiece.CheckIsHaveAPossibleJumpMove())
                 {
-                    IsMandatory = true;
+                    IsHaveAPossibleJumpMove = true;
                     break;
                 }
             }
 
-            return IsMandatory;
+            return IsHaveAPossibleJumpMove;
         }
 
-        public void CalculateWinnerScore()
+        internal int GetAmountOfGamePiecesForScore()
         {
-            foreach(GamePiece gamePiece in m_GamePieces)
+            int AmountOfGamePiecesForScore = 0;
+
+            foreach (GamePiece gamePiece in m_GamePieces)
             {
                 if(gamePiece.Type.Equals(GamePiece.eType.Man))
                 {
-                    m_Score++;
+                    AmountOfGamePiecesForScore++;
                 }
                 else
                 {
-                    m_Score += 4;
+                    AmountOfGamePiecesForScore += 4;
                 }
             }
+
+            return AmountOfGamePiecesForScore;
         }
 
+        internal List<Move> GetPossibleRegularMoves()
+        {
+            List<Move> possibleRegularMoves = new List<Move>();
 
+            foreach(GamePiece gamePiece in m_GamePieces)
+            {
+                possibleRegularMoves.AddRange(gamePiece.PossibleRegularMoves);
+            }
+
+            return possibleRegularMoves;
+        }
+
+        internal List<Move> GetPossibleJumpMoves()
+        {
+            List<Move> possibleJumpMoves = new List<Move>();
+
+            foreach (GamePiece gamePiece in m_GamePieces)
+            {
+                possibleJumpMoves.AddRange(gamePiece.PossibleJumpMoves);
+            }
+
+            return possibleJumpMoves;
+        }
     }
-   
 }

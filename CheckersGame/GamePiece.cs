@@ -25,26 +25,25 @@ namespace GameLogic
         private List<Move> m_PossibleRegularMoves = new List<Move>();
         private List<Move> m_PossibleJumpMoves = new List<Move>();
 
-        public GamePiece(Point i_Location, eColor i_Color)
+        internal GamePiece(Point i_Location, eColor i_Color)
         {
             m_Location = i_Location;
             r_Color = i_Color;
         }
 
-        public Point Location
+        internal Point Location
         {
             get
             {
                 return m_Location;
             }
-
             set
             {
                 m_Location = value;
             }
         }
 
-        public eColor Color
+        internal eColor Color
         {
             get
             {
@@ -52,176 +51,144 @@ namespace GameLogic
             }
         }
 
-        public eType Type
+        internal eType Type
         {
             get
             {
                 return m_Type;
             }
-
             set
             {
                 m_Type = value;
             }
         }
 
-        public List<Move> getPossibleRegularMovesList()
+        internal List<Move> PossibleRegularMoves
         {
-            return m_PossibleRegularMoves;
+            get
+            {
+                return m_PossibleRegularMoves;
+            }
         }
 
-        public List<Move> getPossibleJumpMovesList()
+        internal List<Move> PossibleJumpMoves
         {
-            return m_PossibleJumpMoves;
+            get
+            {
+                return m_PossibleJumpMoves;
+            }
         }
 
-        public void UpdatePossibleRegularMoves(Board i_GameBoard)    // TODO - try to modulate
+        internal void UpdatePossibleRegularMoves(Board i_GameBoard)
         {
-            Point location;
-            Move move;
+            m_PossibleRegularMoves.Clear();
 
-            if(!(this.m_PossibleRegularMoves == null))
-            {
-                m_PossibleRegularMoves.Clear();
-            }
-
-            location = this.NeighborForwardRightLocation();
-            if(i_GameBoard.CheckIsLocationInBound(location) && i_GameBoard[location] == null)
-            {
-                move = new Move(this.Location, location);
-                m_PossibleRegularMoves.Add(move);
-            }
-
-            location = this.NeighborForwardLeftLocation();
-            if (i_GameBoard.CheckIsLocationInBound(location) && i_GameBoard[location] == null)
-            {
-                move = new Move(this.Location, location);
-                m_PossibleRegularMoves.Add(move);
-            }
+            this.tryAddPossibleRegularMove(i_GameBoard, this.NeighborForwardRightLocation());
+            this.tryAddPossibleRegularMove(i_GameBoard, this.NeighborForwardLeftLocation());
 
             if(this.m_Type.Equals(eType.King))
             {
-                location = this.NeighborBackwardRightLocation();
-                if (i_GameBoard.CheckIsLocationInBound(location) && i_GameBoard[location] == null)
-                {
-                    move = new Move(this.Location, location);
-                    m_PossibleRegularMoves.Add(move);
-                }
-
-                location = this.NeighborBackwardLeftLocation();
-                if (i_GameBoard.CheckIsLocationInBound(location) && i_GameBoard[location] == null)
-                {
-                    move = new Move(this.Location, location);
-                    m_PossibleRegularMoves.Add(move);
-                }
+                this.tryAddPossibleRegularMove(i_GameBoard, this.NeighborBackwardRightLocation());
+                this.tryAddPossibleRegularMove(i_GameBoard, this.NeighborBackwardLeftLocation());
             }
         }
 
-        public void UpdatePossibleJumpMoves(Board i_GameBoard)
+        private void tryAddPossibleRegularMove(Board i_GameBoard, Point i_NeighborLocation)
         {
-            Point neighborLocation, targetLocation;
-            Move move;
-
-            neighborLocation = this.NeighborForwardRightLocation();
-            if(IsAlly(i_GameBoard[neighborLocation]))
+            if (i_GameBoard.CheckIsLocationInBound(i_NeighborLocation) && i_GameBoard[i_NeighborLocation] == null)
             {
-                targetLocation = i_GameBoard[neighborLocation].NeighborBackwardRightLocation();
-                if (targetLocation.Equals(null))
-                {
-                    move = new Move(this.Location, targetLocation);
-                    this.AddPossibleJumpMove(move);
-                }
+                this.AddPossibleRegularMove(new Move(this.Location, i_NeighborLocation));
             }
+        }
 
-            neighborLocation = this.NeighborForwardLeftLocation();
-            if (IsAlly(i_GameBoard[neighborLocation]))
-            {
-                targetLocation = i_GameBoard[neighborLocation].NeighborBackwardLeftLocation();
-                if (targetLocation.Equals(null))
-                {
-                    move = new Move(this.Location, targetLocation);
-                    this.AddPossibleJumpMove(move);
-                }
-            }
+        internal void UpdatePossibleJumpMoves(Board i_GameBoard)
+        {
+            m_PossibleJumpMoves.Clear();
+
+            this.tryAddPossibleJumpMove(i_GameBoard, this.NeighborForwardRightLocation());
+            this.tryAddPossibleJumpMove(i_GameBoard, this.NeighborForwardLeftLocation());
 
             if(this.m_Type.Equals(eType.King))
             {
-
-                neighborLocation = this.NeighborBackwardRightLocation();
-                if (IsAlly(i_GameBoard[neighborLocation]))
-                {
-                    targetLocation = i_GameBoard[neighborLocation].NeighborForwardRightLocation();
-                    if (targetLocation.Equals(null))
-                    {
-                        move = new Move(this.Location, targetLocation);
-                        this.AddPossibleJumpMove(move);
-                    }
-                }
-
-                neighborLocation = this.NeighborBackwardLeftLocation();
-                if (IsAlly(i_GameBoard[neighborLocation]))
-                {
-                    targetLocation = i_GameBoard[neighborLocation].NeighborForwardLeftLocation();
-                    if (targetLocation.Equals(null))
-                    {
-                        move = new Move(this.Location, targetLocation);
-                        this.AddPossibleJumpMove(move);
-                    }
-                }
-
+                this.tryAddPossibleJumpMove(i_GameBoard, this.NeighborBackwardRightLocation());
+                this.tryAddPossibleJumpMove(i_GameBoard, this.NeighborBackwardLeftLocation());
             }
         }
 
-        public void AddPossibleRegularMove(Move i_Move)
+        private void tryAddPossibleJumpMove(Board i_GameBoard, Point i_NeighborLocation)
+        {
+            if (i_GameBoard.CheckIsLocationInBound(i_NeighborLocation) && this.isOpponent(i_GameBoard[i_NeighborLocation]))
+            {
+                Point targetLocation;
+
+                if (this.NeighborForwardRightLocation().Equals(i_NeighborLocation))
+                {
+                    targetLocation = i_GameBoard[i_NeighborLocation].NeighborBackwardRightLocation();
+                }
+                else if(this.NeighborForwardLeftLocation().Equals(i_NeighborLocation))
+                {
+                    targetLocation = i_GameBoard[i_NeighborLocation].NeighborBackwardLeftLocation();
+                }
+                else if(this.NeighborBackwardRightLocation().Equals(i_NeighborLocation))
+                {
+                    targetLocation = i_GameBoard[i_NeighborLocation].NeighborForwardRightLocation();
+                }
+                else // this.NeighborBackwardLeftLocation().Equals(i_NeighborLocation)
+                {
+                    targetLocation = i_GameBoard[i_NeighborLocation].NeighborForwardLeftLocation();
+                }
+
+                if (i_GameBoard.CheckIsLocationInBound(targetLocation) && i_GameBoard[targetLocation] == null)
+                {
+                    this.AddPossibleJumpMove(new Move(this.Location, targetLocation));
+                }
+            }
+        }
+
+        internal void AddPossibleRegularMove(Move i_Move)
         {
             m_PossibleRegularMoves.Add(i_Move);
         }
 
-        public void AddPossibleJumpMove(Move i_Move)
+        internal void AddPossibleJumpMove(Move i_Move)
         {
-            m_PossibleRegularMoves.Add(i_Move);
+            m_PossibleJumpMoves.Add(i_Move);
         }
 
-        public bool IsAlly(GamePiece i_OtherGamePiece)
-        {
-            return i_OtherGamePiece != null && this.Color == i_OtherGamePiece.Color;
-        }
-
-        public bool isOpponent(GamePiece i_OtherGamePiece)
+        private bool isOpponent(GamePiece i_OtherGamePiece)
         {
             return i_OtherGamePiece != null && this.Color != i_OtherGamePiece.Color;
         }
 
-        // TODO - try to modulate neighbors methods
-        public Point NeighborForwardRightLocation()
+        internal Point NeighborForwardRightLocation()
         {
             int offset = this.Color == GamePiece.eColor.Black ? 1 : -1;
             
-            return new Point(this.Location.X - offset, this.Location.Y + 1);
+            return new Point(this.Location.Y - offset, this.Location.X + 1);
         }
 
-        public Point NeighborForwardLeftLocation()
+        internal Point NeighborForwardLeftLocation()
         {
             int offset = this.Color == GamePiece.eColor.Black ? 1 : -1;
 
-            return new Point(this.Location.X - offset, this.Location.Y - 1);
+            return new Point(this.Location.Y - offset, this.Location.X - 1);
         }
 
-        public Point NeighborBackwardRightLocation()
+        internal Point NeighborBackwardRightLocation()
         {
             int offset = this.Color == GamePiece.eColor.Black ? 1 : -1;
 
-            return new Point(this.Location.X + offset, this.Location.Y + 1);
+            return new Point(this.Location.Y + offset, this.Location.X + 1);
         }
 
-        public Point NeighborBackwardLeftLocation()
+        internal Point NeighborBackwardLeftLocation()
         {
             int offset = this.Color == GamePiece.eColor.Black ? 1 : -1;
 
-            return new Point(this.Location.X + offset, this.Location.Y - 1);
+            return new Point(this.Location.Y + offset, this.Location.X - 1);
         }
 
-        public bool CheckIsHaveAPossibleMove()
+        internal bool CheckIsHaveAPossibleMove()
         {
             return checkIsHaveAPossibleRegularMove() || CheckIsHaveAPossibleJumpMove();
         }
@@ -231,76 +198,14 @@ namespace GameLogic
             return m_PossibleRegularMoves.Count != 0;
         }
 
-        public bool CheckIsHaveAPossibleJumpMove()
+        internal bool CheckIsHaveAPossibleJumpMove()
         {
             return m_PossibleJumpMoves.Count != 0;
         }
 
-        public void UpdatePossibleRegular(Board i_GameBoard)
+        internal bool CheckIsMoveInPossibleMovesLists(Move i_Move)
         {
-            this.m_PossibleRegularMoves.Clear();
-
-            if (i_GameBoard[this.NeighborForwardRightLocation()] == null)
-            {
-                Move possibleMove = new Move(this.Location, this.NeighborForwardRightLocation());
-                this.AddPossibleRegularMove(possibleMove);
-            }
-
-            if (i_GameBoard[this.NeighborForwardLeftLocation()] == null)
-            {
-                Move possibleMove = new Move(this.Location, this.NeighborForwardLeftLocation());
-                this.AddPossibleRegularMove(possibleMove);
-            }
-
-            if(this.Type == eType.King)
-            {
-                if (i_GameBoard[this.NeighborBackwardRightLocation()] == null)
-                {
-                    Move possibleMove = new Move(this.Location, this.NeighborBackwardRightLocation());
-                    this.AddPossibleRegularMove(possibleMove);
-                }
-
-                if (i_GameBoard[this.NeighborBackwardLeftLocation()] == null)
-                {
-                    Move possibleMove = new Move(this.Location, this.NeighborBackwardLeftLocation());
-                    this.AddPossibleRegularMove(possibleMove);
-                }
-            }
-
+            return (i_Move.CheckIsRegularMove() && m_PossibleRegularMoves.Contains(i_Move) || (i_Move.CheckIsJumpMove() && m_PossibleJumpMoves.Contains(i_Move)));
         }
-
-        public bool IsMoveInPossibleRegularMoves(Move i_UserMove)
-        {
-            bool isMoveExists = false;
-
-            foreach (Move move in m_PossibleRegularMoves)
-            {
-                if (move.Equals(i_UserMove))
-                {
-                    isMoveExists = true;
-                    break;
-                }
-            }
-
-            return isMoveExists;
-        }
-
-        public bool IsMoveInPossibleJumpMoves(Move i_UserMove)
-        {
-            bool isMoveExists = false;
-
-            foreach (Move move in m_PossibleJumpMoves)
-            {
-                if(move.Equals(i_UserMove))
-                {
-                    isMoveExists = true;
-                    break; 
-                }
-            }
-
-            return isMoveExists;
-        }
-
-
     }
 }

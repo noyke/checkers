@@ -5,7 +5,7 @@
         private int m_X;
         private int m_Y;
         
-        public Point(int i_X, int i_Y)
+        public Point(int i_Y, int i_X)
         {
             m_X = i_X;
             m_Y = i_Y;
@@ -17,7 +17,6 @@
             {
                 return m_X;
             }
-
             set
             {
                 m_X = value;
@@ -30,24 +29,28 @@
             {
                 return m_Y;
             }
-
             set
             {
                 m_Y = value;
             }
         }
 
-        static public bool IsValidPointFormat(string i_PointStr)
+        public static bool IsValidPointFormat(string i_PointStr)
         {
             return i_PointStr.Length == 2 && char.IsUpper(i_PointStr[0]) && char.IsLower(i_PointStr[1]);
         }
 
-        static public Point Parse(string i_PointStr)
+        public static Point Parse(string i_PointStr)
         {
             int x = (int)(i_PointStr[0] - 'A');
             int y = (int)(i_PointStr[1] - 'a');
 
-            return new Point(x, y);
+            return new Point(y, x);
+        }
+
+        public override string ToString()
+        {
+            return ((char)('A' + m_X)).ToString() + ((char)('a' + m_Y)).ToString();
         }
     }
 }

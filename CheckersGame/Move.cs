@@ -7,6 +7,12 @@ namespace GameLogic
 {
     public struct Move
     {
+        private enum eMoveOffset
+        {
+            Regular = 1,
+            Jump = 2
+        }
+
         private Point m_Source;
         private Point m_Destination;
 
@@ -32,20 +38,21 @@ namespace GameLogic
             }
         }
 
-        public bool CheckIsRegularMove()
+        internal bool CheckIsRegularMove()
         {
-            return CheckIsCheckersMove(1);
+            return checkIsCheckersMove(eMoveOffset.Regular);
         }
 
-        public bool CheckIsJumpMove()
+        internal bool CheckIsJumpMove()
         {
-            return CheckIsCheckersMove(2);
+            return checkIsCheckersMove(eMoveOffset.Jump);
         }
 
-        private bool CheckIsCheckersMove(int i_Offset)
+        private bool checkIsCheckersMove(eMoveOffset i_Offset)
         {
-            bool isCheckersMoveUpward = m_Source.X - i_Offset == m_Destination.X && (m_Source.Y + i_Offset == m_Destination.Y || m_Source.Y - i_Offset == m_Destination.Y);
-            bool isCheckersMoveDownward = m_Source.X + i_Offset == m_Destination.X && (m_Source.Y + i_Offset == m_Destination.Y || m_Source.Y - i_Offset == m_Destination.Y);
+            int offset = (int)i_Offset;
+            bool isCheckersMoveUpward = m_Source.X - offset == m_Destination.X && (m_Source.Y + offset == m_Destination.Y || m_Source.Y - offset == m_Destination.Y);
+            bool isCheckersMoveDownward = m_Source.X + offset == m_Destination.X && (m_Source.Y + offset == m_Destination.Y || m_Source.Y - offset == m_Destination.Y);
 
             return isCheckersMoveUpward || isCheckersMoveDownward;
         }
@@ -60,11 +67,15 @@ namespace GameLogic
         public static Move Parse(string i_MoveStr)
         {
             string[] pointsStrs = i_MoveStr.Split('>');
-
             Point source = Point.Parse(pointsStrs[0]);
             Point destination = Point.Parse(pointsStrs[1]);
 
             return new Move(source, destination);
+        }
+
+        public override string ToString()
+        {
+            return Source.ToString() + ">" + Destination.ToString();
         }
     }
 }

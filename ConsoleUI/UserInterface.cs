@@ -4,11 +4,14 @@ using System.Linq;
 using System.Text;
 
 using GameLogic;
+using System.IO;
 
 namespace ConsoleUI
 {
     public class UserInterface
     {
+        private const int k_ComputerMoveDelay = 2000;
+
         private Game m_Game = new Game();
 
         public void Run()
@@ -25,7 +28,7 @@ namespace ConsoleUI
                 {
                     printBoard();
 
-                    if(!(isRoundOver = m_Game.CheckIsRoundOver())) // TODO
+                    if(!(isRoundOver = m_Game.CheckIsRoundOver()))
                     {
                         if (m_Game.CurrentPlayerType() == Player.eType.Human)
                         {
@@ -36,30 +39,30 @@ namespace ConsoleUI
                         }
                         else
                         {
-                            if(!m_Game.MakeComputerMove())
-                            {
-                                isRoundOver = true;
-                            }
+                            makeComputerMove();
                         }
                     }
                 }
 
                 displayRoundResult();
 
-                if(!checkForRematch())
+                if(checkIsUserWantRematch())
                 {
-                    isGameOver = true;
+                    m_Game.SetNewRound();
                 }
                 else
                 {
-                    // rematch
+                    isGameOver = true;
                 }
             }
+
+            Ex02.ConsoleUtils.Screen.Clear();
+            Console.WriteLine("Thanks for playing! See you next time :)");
         }
 
         private bool makeUserMove()
         {
-            bool isValidMove = false; 
+            bool isValidMove; 
             string userMoveStr;
             Move userMove;
 
@@ -75,7 +78,7 @@ namespace ConsoleUI
                 {
                     userMove = Move.Parse(userMoveStr);
 
-                    isValidMove = m_Game.MakeUserMoveAndUpdates(userMove);
+                    isValidMove = m_Game.MakeUserMove(userMove);
                     
                     if(!isValidMove) 
                     { 
@@ -88,17 +91,22 @@ namespace ConsoleUI
             return !checkIsQuitInput(userMoveStr);
         }
 
+        private void makeComputerMove()
+        {
+            Console.Write("thinking...");
+            System.Threading.Thread.Sleep(k_ComputerMoveDelay);
+            m_Game.MakeComputerMove();
+        }
+
         private string getMoveFromUser()
         {
             string userInput;
             bool isValidInput;
-            
+
             do
             {
                 userInput = Console.ReadLine();
-
                 isValidInput = checkIsQuitInput(userInput) || Move.IsValidMoveFormat(userInput);
-
 
                 if (!isValidInput)
                 {
@@ -106,13 +114,13 @@ namespace ConsoleUI
                 }
 
             } while (!isValidInput);
-
+            
             return userInput;
         }
 
         private bool checkIsQuitInput(string i_UserInput)
         {
-            return String.Equals(i_UserInput, "q") || String.Equals(i_UserInput, "Q");
+            return i_UserInput.ToUpper().Equals("Q");
         }
 
         private void initGame()
@@ -146,7 +154,7 @@ namespace ConsoleUI
             {
                 userInput = Console.ReadLine();
 
-                isValidInput = userInput.Length <= Player.k_MaxNameLength && !userInput.Contains(' ');
+                isValidInput =  0 < userInput.Length && userInput.Length <= Player.k_MaxNameLength && !userInput.Contains(' ');
 
                 if (!isValidInput)
                 {
@@ -154,6 +162,8 @@ namespace ConsoleUI
                 }
 
             } while (!isValidInput);
+
+            Ex02.ConsoleUtils.Screen.Clear();
 
             return userInput;
         }
@@ -177,7 +187,7 @@ namespace ConsoleUI
             {
                 userInput = Console.ReadLine();
 
-                isValidInput = String.Equals(userInput, "1") || String.Equals(userInput, "2") || String.Equals(userInput, "3");
+                isValidInput = userInput.Equals("1") || userInput.Equals("2") || userInput.Equals("3");
 
                 if (!isValidInput)
                 {
@@ -186,15 +196,17 @@ namespace ConsoleUI
 
             } while (!isValidInput);
 
-            if (String.Equals(userInput, "1"))
+            Ex02.ConsoleUtils.Screen.Clear();
+
+            if (userInput.Equals("1"))
             {
                 boardSize = Board.eBoardSize.Small;
             }
-            else if (String.Equals(userInput, "2"))
+            else if (userInput.Equals("2"))
             {
                 boardSize = Board.eBoardSize.Medium;
             }
-            else // String.Equals(userInput, "3")
+            else // userInput.Equals("3")
             {
                 boardSize = Board.eBoardSize.Large;
             }
@@ -209,7 +221,7 @@ namespace ConsoleUI
             bool isValidInput;
 
             Console.WriteLine(
-           @"Playing against:
+@"Playing against:
 (1) A friend
 (2) The computer");
 
@@ -217,7 +229,7 @@ namespace ConsoleUI
             {
                 userInput = Console.ReadLine();
 
-                isValidInput = String.Equals(userInput, "1") || String.Equals(userInput, "2");
+                isValidInput = userInput.Equals("1") || userInput.Equals("2");
 
                 if (!isValidInput)
                 {
@@ -226,7 +238,8 @@ namespace ConsoleUI
 
             } while (!isValidInput);
 
-            opponentType = String.Equals(userInput, "1") ? Player.eType.Human : Player.eType.Computer;
+            Ex02.ConsoleUtils.Screen.Clear();
+            opponentType = userInput.Equals("1") ? Player.eType.Human : Player.eType.Computer;
 
             return opponentType;
         }
@@ -237,6 +250,7 @@ namespace ConsoleUI
             char rowIndex = 'a';
             int boardSize = m_Game.GetBoardSize();
 
+            Ex02.ConsoleUtils.Screen.Clear();
             printBoardColsIndexes(boardSize);
             printBoardRowsSeparator(boardSize);
 
@@ -246,7 +260,7 @@ namespace ConsoleUI
 
                 for(int col = 0; col < boardSize; col++)
                 {
-                    currGamePieceSign = getSignToPrint(row, col);
+                    currGamePieceSign = getSignToPrint(new Point(row, col));
 
                     Console.Write("| " + currGamePieceSign.ToString() + " ");
                 }
@@ -255,7 +269,7 @@ namespace ConsoleUI
                 printBoardRowsSeparator(boardSize);
             }
 
-            printLastMove(); // TODO
+            printMovesDescription();
         }
 
         private void printBoardColsIndexes(int i_BoardSize)
@@ -284,10 +298,10 @@ namespace ConsoleUI
             Console.WriteLine('=');
         }
 
-        private char getSignToPrint(int row, int col) // find a better name
+        private char getSignToPrint(Point i_Location)
         {
             char signToPrint;
-            GamePiece.eColor? gamePieceColor = m_Game.GetGamePieceColor(int row, int col);
+            GamePiece.eColor? gamePieceColor = m_Game.GetGamePieceColor(i_Location);
 
             if(gamePieceColor == null)
             {
@@ -295,14 +309,79 @@ namespace ConsoleUI
             }
             else if(gamePieceColor == GamePiece.eColor.Black)
             {
-                signToPrint = m_Game.CheckIsGamePieceKing(int row, int col) ? 'K' : 'X';
+                signToPrint = m_Game.CheckIsGamePieceKing(i_Location) ? 'K' : 'X';
             }
             else
             {
-                signToPrint = m_Game.CheckIsGamePieceKing(int row, int col) ? 'U' : 'O';
+                signToPrint = m_Game.CheckIsGamePieceKing(i_Location) ? 'U' : 'O';
             }
 
             return signToPrint;
+        }
+
+        private void printMovesDescription()
+        {
+            Move? lastMove = m_Game.LastMove;
+
+            if (lastMove.HasValue)
+            {
+                string lastMovePlayerName = m_Game.GetLastMovePlayerName();
+                char lastMovePlayerSign = m_Game.GetLastMovePlayerNumber().Equals(Player.ePlayerNumber.Player1) ? 'X' : 'O';
+                string lastMoveDescription = string.Format("{0}'s move was ({1}): {2}", lastMovePlayerName, lastMovePlayerSign, lastMove.Value.ToString());
+                Console.WriteLine(lastMoveDescription);
+            }
+
+            string currentPlayerName = m_Game.GetCurrentPlayerName();
+            char currentPlayerSign = m_Game.GetCurrentPlayerNumber().Equals(Player.ePlayerNumber.Player1) ? 'X' : 'O';
+            string currentMoveDescription = string.Format("{0}'s turn ({1}): ", currentPlayerName, currentPlayerSign);
+            Console.Write(currentMoveDescription);
+        }
+
+        private void displayRoundResult()
+        {
+            Ex02.ConsoleUtils.Screen.Clear();
+
+            StringBuilder roundResultMsgSB = new StringBuilder();
+            Game.eRoundResult roundResult= m_Game.RoundResult();
+            
+            if(roundResult == Game.eRoundResult.Draw)
+            {
+                roundResultMsgSB.Append("It's a draw!");
+            }
+            else
+            {
+                roundResultMsgSB.AppendFormat("{0} wins!", m_Game.GetWinnerName(roundResult));
+            }
+
+            roundResultMsgSB.Append(Environment.NewLine + Environment.NewLine);
+            roundResultMsgSB.Append("Score:" + Environment.NewLine);
+            roundResultMsgSB.AppendFormat("{0}: {1}{2}", m_Game.GetWinnerName(roundResult), m_Game.GetWinnerScore(roundResult), Environment.NewLine);
+            roundResultMsgSB.AppendFormat("{0}: {1}{2}", m_Game.GetLoserName(roundResult), m_Game.GetLoserScore(roundResult), Environment.NewLine);
+
+            Console.WriteLine(roundResultMsgSB.ToString());
+        }
+
+        private bool checkIsUserWantRematch()
+        {
+            string userInput;
+            bool isValidInput;
+
+            Console.WriteLine("Do you want a rematch? (Y / N)");
+
+            do
+            {
+                userInput = Console.ReadLine();
+
+                isValidInput = userInput.ToUpper().Equals("Y") || userInput.ToUpper().Equals("N");
+
+                if (!isValidInput)
+                {
+                    Console.WriteLine("The input you entered is invalid. Please try again.");
+                }
+
+            } while (!isValidInput);
+
+            return userInput.Equals("Y") || userInput.Equals("y");
         }
     }
 }
